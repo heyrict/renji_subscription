@@ -130,6 +130,9 @@ def send_mail(subject: str, content: str, content_type="plain"):
 
 if __name__ == "__main__":
     CHECK_INTEVAL = int(os.getenv("CHECK_INTEVAL", "24"))
+    LAST_CHECKPOINT_FILE = os.getenv(
+        "LAST_CHECKPOINT_FILE", "/tmp/renji-checkpoint.txt"
+    )
     data = fetch_feed()
     if len(data) > 0 and data[0].get("date") is not None:
         # Send mail if latest feed is updated \ge yesterday
@@ -140,6 +143,11 @@ if __name__ == "__main__":
                 f"Last message recorded at {max_date}, skipping sending email"
             )
         else:
+            if os.path.exists(LAST_CHECKPOINT_FILE):
+                with open("LAST_CHECKPOINT_FILE") as f:
+                    last_checkpoint = f.read()
+                if last_checkpoint == str(hash(data)):
+                    logger.info(f"Same hash with previous mail, skipping")
             mailing_datas: list[dict[str, str]] = []
             # Convert all datetime to string
             for d in data:
@@ -154,9 +162,12 @@ if __name__ == "__main__":
             contents = HTML.format(
                 json.dumps(data, ensure_ascii=False, indent=2)
             )
+            logger.info(f"Update detected, trying to send mail")
             send_mail(
                 os.getenv("SUBJECT", "Renji Subscription Error"), contents
             )
+            with open("LAST_CHECKPOINT_FILE", "w") as f:
+                f.write(str(hash(data)))
     else:
         contents = HTML.format(json.dumps(data, ensure_ascii=False, indent=2))
         send_mail(
