@@ -35,7 +35,11 @@ HTML = """
 DEBUG = bool(int(os.getenv('DEBUG', False)))
 
 logger = logging.getLogger("renji_subscription")
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "WARNING"))
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "WARNING"),
+    datefmt='%Y-%m-%d %H:%M:%S',
+    format="%(levelname)s: %(asctime)s: %(message)s"
+)
 
 
 class RenjiData(TypedDict):
